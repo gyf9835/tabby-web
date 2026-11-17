@@ -10,6 +10,21 @@
 
 This is the Tabby terminal, served as a web app. It also provides the config sync service for the Tabby app.
 
+# 🍴 Fork note: MCP Server（本 fork 新增功能）
+
+本 fork 在上游 tabby-web 基础上新增了 **MCP (Model Context Protocol) 服务器**，任何 MCP 客户端（ZCode / Claude / mcpjungle 等）都可以直接把 tabby-web 当作 SSH 工具的 MCP 上游：
+
+- **`/mcp` 端点**：streamable HTTP（JSON-RPC），实现 `initialize` / `tools/list` / `tools/call`，无状态、纯 JSON 响应，零额外协议依赖
+- **工具集**：`list_servers` / `ssh_exec` / `sftp_read` / `sftp_write`，操作对象是用户同步的 Tabby SSH 配置
+- **凭据安全**：同步的加密配置在服务端按 Tabby vault 算法解密（PBKDF2-SHA512 ×100k + AES-256-CBC，密码经 `MCP_VAULT_PASSWORD` 注入）；SSH 连接经 tabby-connection-gateway 的 WebSocket 中继，**SSH 握手端到端加密，gateway 与服务端均看不到会话明文**
+- **按客户端分组授权**：`McpClient`（token + `allowed_groups`），不同 agent 只能看到/操作各自分组内的服务器；管理员可用 config_sync_token 全权访问
+- **管理方式**：CLI（`manage.py create_mcp_client <name> --groups "home,vps"`）+ Django admin
+- **自动同步**：任意设备通过 Tabby 同步新增/修改服务器后，MCP 工具在缓存过期（120s）后自动生效，无需重启
+
+实现位于 `backend/tabby/app/mcp_server/`（契约测试见 `tests.py`），容器化部署配方见 `deploy/`（派生镜像 + gateway 服务编排）。
+
+> ⚠️ 这是 fork 私有增强，不属于上游 Eugeny/tabby-web 的功能。
+
 # How it works
 
 Tabby Web serves the [Tabby Terminal](https://github.com/Eugeny/tabby) as a web application while managing multiple config files, authentication, and providing TCP connections via a [separate gateway service](https://github.com/Eugeny/tabby-connection-gateway).
