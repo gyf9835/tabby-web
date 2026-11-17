@@ -1,5 +1,6 @@
 import fsspec
 import logging
+import os
 import requests
 import shutil
 import subprocess
@@ -46,19 +47,26 @@ class Command(BaseCommand):
 
                 logging.info(f"Downloading {plugin}@{version} from {url}")
                 response = requests.get(url)
+                response.raise_for_status()
 
-                with tempfile.NamedTemporaryFile("wb") as f:
-                    f.write(response.content)
-                    f.flush()
+                # The temp file must be closed before handing it to tar:
+                # on Windows an open NamedTemporaryFile cannot be reopened
+                # by another process (sharing violation).
+                fd, tarball_path = tempfile.mkstemp(suffix=".tgz")
+                try:
+                    with os.fdopen(fd, "wb") as f:
+                        f.write(response.content)
                     plugin_final_target = Path(tempdir) / plugin
 
                     with tempfile.TemporaryDirectory() as extraction_tmp:
                         subprocess.check_call(
-                            ["tar", "-xzf", f.name, "-C", str(extraction_tmp)]
+                            ["tar", "-xzf", tarball_path, "-C", str(extraction_tmp)]
                         )
                         shutil.move(
                             Path(extraction_tmp) / "package", plugin_final_target
                         )
+                finally:
+                    os.unlink(tarball_path)
 
             if fs.exists(target):
                 fs.rm(target, recursive=True)
