@@ -5,3 +5,5 @@ sendfile = True
 
 max_requests = 1000
 max_requests_jitter = 100
+
+timeout = 240  # MCP ssh tool calls can run long

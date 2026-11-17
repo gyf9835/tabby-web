@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "social_django",
     "corsheaders",
     "tabby.app",
+    "tabby.app.mcp_server",
 ]
 
 MIDDLEWARE = [
@@ -273,3 +274,11 @@ if FRONTEND_URL:
         CSRF_COOKIE_SECURE = True
 else:
     LOGIN_REDIRECT_URL = '/'
+
+
+# --- tabby MCP server (feature/mcp-server) ---
+MCP_VAULT_PASSWORD = os.getenv("MCP_VAULT_PASSWORD")
+MCP_GATEWAY_URL = os.getenv("MCP_GATEWAY_URL", "")
+MCP_GATEWAY_TOKEN = os.getenv("MCP_GATEWAY_TOKEN", "")
+MCP_CONNECT_MODE = os.getenv("MCP_CONNECT_MODE", "gateway")
+MCP_CACHE_TTL = int(os.getenv("MCP_CACHE_TTL", "120"))
