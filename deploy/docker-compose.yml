@@ -1,0 +1,35 @@
+services:
+    tabby:
+        image: tabby-web-mcp:latest
+        build: .
+        restart: always
+        ports:
+            - 9090:80
+        environment:
+            - DATABASE_URL=sqlite:////data/tabby.sqlite
+            - PORT=80
+            - DEBUG=True
+            # --- tabby MCP server ---
+            - MCP_VAULT_PASSWORD=${MCP_VAULT_PASSWORD:-}
+            - MCP_GATEWAY_URL=ws://tabby-connection-gateway:9000
+            - MCP_GATEWAY_TOKEN=xjwnSlhtqNFDpSU
+            - MCP_CONNECT_MODE=gateway
+            - MCP_CACHE_TTL=120
+        volumes:
+            - tabby_data:/data
+
+    tabby-connection-gateway:
+        image: ghcr.io/eugeny/tabby-connection-gateway:master
+        command: --token-auth --host 0.0.0.0
+        restart: always
+        environment:
+            - TABBY_AUTH_TOKEN=xjwnSlhtqNFDpSU
+        ports:
+            # LAN-only for now; public wss://tabby-gateway.hz.gyf.name can be
+            # routed to this port later once the nginx 502 is fixed
+            - 127.0.0.1:9091:9000
+
+volumes:
+    tabby_data:
+        external: true
+        name: tabby-web_tabby_data
