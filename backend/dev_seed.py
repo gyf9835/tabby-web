@@ -38,6 +38,9 @@ U = get_user_model()
 u, _ = U.objects.get_or_create(username="admin", defaults={"config_sync_token": "dev-sync-token-0000000000000000000000000000000000000000000000000000000000000000"})
 Config.objects.filter(user=u, name="dev-synthetic").delete()
 Config.objects.create(user=u, name="dev-synthetic", content=encrypt_yaml("dev-vault-pass"))
+u.is_staff = True; u.is_superuser = True
+if not u.password:
+    u.set_password("dev")  # 本地开发库专用
 u.active_config = Config.objects.get(user=u, name="dev-synthetic"); u.save()
 all_c, created1 = McpClient.objects.get_or_create(name="dev-all")
 home_c, created2 = McpClient.objects.get_or_create(name="dev-home", defaults={"allowed_groups": ["home"]})
